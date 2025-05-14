@@ -106,7 +106,7 @@ public class UserApi {
                             new Protocol.Packet(
                                 api.getFxProtoClient().getClient().getClientId(),
                                 api.getFxProtoClient().getClient().getHostName(),
-                                "UPDATE USER",
+                                "DELETE USER",
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.UPDATE,
                                     id,
