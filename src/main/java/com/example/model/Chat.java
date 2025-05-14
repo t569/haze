@@ -7,6 +7,7 @@ import java.util.Set;
 @Entity
 @Table(name = "chats")
 public class Chat {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -15,30 +16,45 @@ public class Chat {
     @ManyToMany(mappedBy = "chats")
     private Set<User> users = new HashSet<>();
 
-    /** One Chat → One ChatInfo */
-    @OneToOne(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "chat_info_id", referencedColumnName = "id")
-    private ChatInfo chatInfo;
+    /** One Chat → Many ChatInfos (Messages) */
+    @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ChatInfo> chatInfos = new HashSet<>();
 
-    public Chat() { }
+    public Chat() {}
 
-    // getters & setters
+    // Getters and setters
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
+    }
+    public Set<User> getUsers() {
+        return users;
+    }
 
-    public Set<User> getUsers() { return users; }
     public void addUser(User user) {
         users.add(user);
         user.getChats().add(this);
     }
+
     public void removeUser(User user) {
         users.remove(user);
         user.getChats().remove(this);
     }
 
-    public ChatInfo getChatInfo() { return chatInfo; }
-    public void setChatInfo(ChatInfo chatInfo) {
-        this.chatInfo = chatInfo;
+    public Set<ChatInfo> getChatInfos() {
+        return chatInfos;
+    }
+
+    public void addChatInfo(ChatInfo chatInfo) {
+        chatInfos.add(chatInfo);
         chatInfo.setChat(this);
+    }
+
+    public void removeChatInfo(ChatInfo chatInfo) {
+        chatInfos.remove(chatInfo);
+        chatInfo.setChat(null);
     }
 }

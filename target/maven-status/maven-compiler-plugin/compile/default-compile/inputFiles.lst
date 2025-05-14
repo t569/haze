@@ -1,3 +1,4 @@
+D:\Repos\Haze\haze\src\main\java\com\example\clientfx\network\FxProtoClient.java
 D:\Repos\Haze\haze\src\main\java\com\example\App.java
 D:\Repos\Haze\haze\src\main\java\com\example\model\ChatInfo.java
 D:\Repos\Haze\haze\src\main\java\com\example\socket\routines\Echo.java
@@ -5,9 +6,12 @@ D:\Repos\Haze\haze\src\main\java\com\example\socket\server\ProtoClient.java
 D:\Repos\Haze\haze\src\main\java\com\example\DataBase.java
 D:\Repos\Haze\haze\src\main\java\com\example\socket\routines\Dummy.java
 D:\Repos\Haze\haze\src\main\java\com\example\socket\server\DataProvider.java
+D:\Repos\Haze\haze\src\main\java\com\example\clientfx\App.java
+D:\Repos\Haze\haze\src\main\java\com\example\clientfx\controller\MainController.java
 D:\Repos\Haze\haze\src\main\java\com\example\model\Chat.java
 D:\Repos\Haze\haze\src\main\java\com\example\socket\server\ProtoServer.java
 D:\Repos\Haze\haze\src\main\java\com\example\ORMProvider.java
 D:\Repos\Haze\haze\src\main\java\com\example\socket\server\DataBindings.java
+D:\Repos\Haze\haze\src\main\java\com\example\clientfx\api\ApiClient.java
 D:\Repos\Haze\haze\src\main\java\com\example\model\User.java
 D:\Repos\Haze\haze\src\main\java\com\example\socket\server\Protocol.java

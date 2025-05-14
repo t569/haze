@@ -4,7 +4,6 @@ import java.util.Optional;
 
 
 public class Protocol implements Serializable{
-    
     public enum Status
     {                           // Sent by: 
     CONN_INIT_HANDSHAKE,    // server
@@ -54,6 +53,12 @@ public class Protocol implements Serializable{
     {
         this.status = status;
     }
+
+
+    /** 
+     * Given a Response whose Packet.payload is actually an instance of T,
+     * cast and return it. 
+     */
 
     public static class Packet implements Serializable
     {
@@ -108,7 +113,7 @@ public class Protocol implements Serializable{
         // Basically tells the receiver what to do with the message
         public static class MetaData implements Serializable
         {
-            enum CommProtocol
+            public enum CommProtocol
             {
                 GET,
                 POST,
@@ -184,12 +189,39 @@ public class Protocol implements Serializable{
             }
 
         }
+
+        
     }
 
     /* Soooooooo
      * This is the protocol in a nutshell
      * 
      */
+    /**
+ * Safely extract and cast the payload from a Protocol’s packet metadata.
+ */
 
-    
+ // lil redundant dont you think?
+@SuppressWarnings("unchecked")
+public static <T> T unwrapEntityResponse(Protocol proto, Class<T> type) {
+    if (proto == null 
+     || proto.packet == null 
+     || proto.packet.getMetaData() == null) {
+        return null;
+    }
+    Object raw = proto.packet
+                     .getMetaData()
+                     .getPayload()
+                     .orElse(null);
+    if (raw == null) {
+        return null;
+    }
+    if (!type.isInstance(raw)) {
+        throw new IllegalStateException(
+            "Expected payload " + type.getName() +
+            " but got " + raw.getClass().getName()
+        );
+    }
+    return (T) raw;
+}
 }

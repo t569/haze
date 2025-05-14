@@ -42,7 +42,20 @@
             <artifactId>jakarta.persistence-api</artifactId>
             <version>3.1.0</version>
     </dependency>
-    
+  <!-- JavaFX UI controls (includes javafx-graphics transitively) -->
+  <dependency>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-controls</artifactId>
+    <version>21</version>
+  </dependency>
+
+  <!-- JavaFX FXML support (if you use FXMLLoader) -->
+  <dependency>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-fxml</artifactId>
+    <version>21</version>
+  </dependency>
+
   </dependencies>
 
   <build>
@@ -97,7 +110,14 @@
             <mainClass>com.example.App</mainClass>
           </configuration>
         </plugin>
-
+        <plugin>
+          <groupId>org.openjfx</groupId>
+          <artifactId>javafx-maven-plugin</artifactId>
+          <version>0.0.8</version>
+          <configuration>
+            <mainClass>com.example.clientfx.App</mainClass>
+          </configuration> 
+        </plugin> 
       </plugins>
     </pluginManagement>
   </build>

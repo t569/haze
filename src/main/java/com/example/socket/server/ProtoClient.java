@@ -45,7 +45,16 @@ public class ProtoClient {
         return this.hostName;
     }
 
-    
+    public ObjectInputStream getInStream()
+    {
+        return this.in;
+    }
+
+    public ObjectOutputStream getOutStream()
+    {
+        return this.out;
+    }
+
     // just send a regular request
     public void sendRequest(Protocol req) throws IOException, ClassNotFoundException
     {
@@ -63,7 +72,7 @@ public class ProtoClient {
 
 
     // get a response handle it and return a protocol to send
-    public Protocol getResponse(ObjectInputStream in, Socket socket) throws IOException, ClassNotFoundException
+    public Protocol getResponse(ObjectInputStream in) throws IOException, ClassNotFoundException
     {
         client_parrot.log("Response from server: " + hostName);
         return (Protocol) in.readObject();
