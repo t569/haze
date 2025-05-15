@@ -7,7 +7,7 @@ import java.time.Instant;
  * Represents detailed information for a chat message.
  */
 @Entity
-@Table(name = "chat_info")
+@Table(name = "chat_infos")
 public class ChatInfo {
 
     /** Primary key */
@@ -28,9 +28,9 @@ public class ChatInfo {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String text;
 
-    /** Reference to the associated chat (inverse of Chat.chatInfo) */
-    @OneToOne
-    @JoinColumn(name="chat_id")
+    /** Many messages → One Chat */
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "chat_id", referencedColumnName = "id")
     private Chat chat;
 
     /** Default constructor */
