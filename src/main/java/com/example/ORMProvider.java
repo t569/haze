@@ -1,6 +1,7 @@
 package com.example;
 
 import java.io.Serializable;
+import java.util.List;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -169,6 +170,27 @@ public class ORMProvider <T, ID extends Serializable> implements DataProvider<T>
                 tx.rollback();
             }
             throw new Exception("Error deleting " + entityClass.getSimpleName(), e);
+        }
+    }
+
+    @Override
+    public List<T> getAll() throws Exception
+    {
+        Transaction tx = null;
+        try 
+        {
+            tx = session.beginTransaction();
+            List<T> entities = session.createQuery("FROM " + entityClass.getName(), entityClass).list();
+            tx.commit();
+            return entities;
+        }
+        catch(Exception e)
+        {
+            if(tx != null)
+            {
+                tx.rollback();
+            }
+            throw new Exception("Error fetching all " + entityClass.getSimpleName(), e);
         }
     }
 

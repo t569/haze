@@ -6,6 +6,7 @@ import com.example.clientfx.api.ApiClient;
 import com.example.clientfx.network.FxProtoClient;
 import com.example.model.User;
 import com.example.socket.server.Protocol;
+import com.example.Config;
 
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -50,9 +51,10 @@ public class UserListController {
         userTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
         // Setup API client
-        // TODO: make this better in terms of functionality
         try {
-            FxProtoClient fxProtoClient = new FxProtoClient("localhost", 8080, "client");
+
+            // TODO: change the name for client
+            FxProtoClient fxProtoClient = new FxProtoClient(Config.SERVER_NAME,Config.PORT_NUMBER, "client");
             ApiClient apiClient = new ApiClient(fxProtoClient);
             userApi = new UserApi(apiClient);
         }
@@ -66,7 +68,7 @@ public class UserListController {
 
         // Button actions
         // refreshButton.setOnAction(event -> onLoadUsers());
-        deleteButton.setOnAction(event -> onDeleteUser());
+        // deleteButton.setOnAction(event -> onDeleteUser());
         newButton.setOnAction(event -> onCreateUser());
         ediButton.setOnAction(event -> onEditUser());
     }
@@ -89,21 +91,21 @@ public class UserListController {
 
     
     // TODO: implement these methods and make it work with the current API
-    private void onDeleteUser() {
-        User selectedUser = userTable.getSelectionModel().getSelectedItem();
-        if (selectedUser != null) {
-            CompletableFuture<Protocol> future = userApi.deleteUser(selectedUser.getId());
-            future.thenAccept(response -> {
-                if (response.getStatus() == Protocol.Status.CONN_CONF) {
-                    Platform.runLater(() -> onLoadUsers());
-                } else {
-                    showAlert("Error", "Failed to delete user", Alert.AlertType.ERROR);
-                }
-            });
-        } else {
-            showAlert("Error", "No user selected", Alert.AlertType.WARNING);
-        }
-    }
+    // private void onDeleteUser() {
+    //     User selectedUser = userTable.getSelectionModel().getSelectedItem();
+    //     if (selectedUser != null) {
+    //         CompletableFuture<Protocol> future = userApi.deleteUser(selectedUser.getId());
+    //         future.thenAccept(response -> {
+    //             if (response.getStatus() == Protocol.Status.CONN_CONF) {
+    //                 Platform.runLater(() -> onLoadUsers());
+    //             } else {
+    //                 showAlert("Error", "Failed to delete user", Alert.AlertType.ERROR);
+    //             }
+    //         });
+    //     } else {
+    //         showAlert("Error", "No user selected", Alert.AlertType.WARNING);
+    //     }
+    // }
 
     // TODO: Actually talk to the backend
     private void onCreateUser() {
@@ -111,11 +113,39 @@ public class UserListController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/user_form.fxml"));
         Parent root = loader.load();
         UserFormController controller = loader.getController();
-        controller.init(userApi.getApi(), null, savedUser -> {
-            users.add(savedUser);
-            userTable.refresh();
+        controller.init(userApi.getApi(), null, user -> {
+
+            // Send to the backend
+            userApi.createUser(user.getName()).thenAccept(response -> {
+                if (response.getStatus() == Protocol.Status.CONN_CONF) {
+
+                    // check if the response was not null
+                    if(response.getPacket().getMetaData().getPayload().isPresent())
+                    {
+                        User savedUser = (User) response.getPacket().getMetaData().getPayload().get();
+
+                        // Update the UI
+                        Platform.runLater(() -> {
+                        users.add(savedUser);
+                        userTable.refresh();
+                    });
+                    }
+                
+                } else {
+                    Platform.runLater(() -> {
+                        // Handle error
+                        showAlert("Error", "Failed to create user", Alert.AlertType.ERROR);
+                    });
+                }
+            }).exceptionally(ex -> {
+                Platform.runLater(() -> {
+                    showAlert("Error", "Server error: " + ex.getMessage(), Alert.AlertType.ERROR);
+                });
+                return null;
+            });
         });
 
+        // Update the UI
         Stage stage = new Stage();
         stage.setTitle("Create New User");
         stage.setScene(new Scene(root));
@@ -127,31 +157,49 @@ public class UserListController {
     }
     }
 
-    // TODO: Actually talk to the backend
+
     private void onEditUser() {
        User selected = userTable.getSelectionModel().getSelectedItem();
-    if (selected == null) {
-        showAlert("No Selection", "Please select a user to edit.", Alert.AlertType.WARNING);
-        return;
-    }
+        if (selected == null) {
+            showAlert("No Selection", "Please select a user to edit.", Alert.AlertType.WARNING);
+            return;
+        }
 
-    try {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/user_form.fxml"));
-        Parent root = loader.load();
-        UserFormController controller = loader.getController();
-        controller.init(userApi.getApi(), selected, updatedUser -> {
-            userTable.refresh();
-        });
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/user_form.fxml"));
+            Parent root = loader.load();
+            UserFormController controller = loader.getController();
 
-        Stage stage = new Stage();
-        stage.setTitle("Edit User");
-        stage.setScene(new Scene(root));
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.initOwner(userTable.getScene().getWindow());
-        stage.showAndWait();
-    } catch (IOException e) {
-        showAlert("Error", "Unable to load user form: " + e.getMessage(), Alert.AlertType.ERROR);
-    }
+            controller.init(userApi.getApi(), selected, updatedUser -> {
+                // Step 1: Update user on the backend
+                userApi.updateUser(updatedUser).thenAccept(response -> {
+                    if (response.getStatus() == Protocol.Status.CONN_CONF) {
+                        Platform.runLater(() -> {
+                            userTable.refresh();
+                        });
+                    } else {
+                        Platform.runLater(() -> {
+                            showAlert("Error", "Failed to update user on server.", Alert.AlertType.ERROR);
+                        });
+                    }
+                }).exceptionally(ex -> {
+                    Platform.runLater(() -> {
+                        showAlert("Error", "Server error: " + ex.getMessage(), Alert.AlertType.ERROR);
+                    });
+                    return null;
+                });
+            });
+
+            // Update the UI
+            Stage stage = new Stage();
+            stage.setTitle("Edit User");
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initOwner(userTable.getScene().getWindow());
+            stage.showAndWait();
+        } catch (IOException e) {
+            showAlert("Error", "Unable to load user form: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
 
      private void showAlert(String title, String content, Alert.AlertType type) {

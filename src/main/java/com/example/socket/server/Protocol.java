@@ -119,6 +119,8 @@ public class Protocol implements Serializable{
                 POST,
                 UPDATE,
                 DELETE,
+                GET_ALL,
+                GET_ALL_BY_OBJ,
                 RESPONSE_OK,
                 RESPONSE_ERR,       // Baba no time to dey do error codes
             }

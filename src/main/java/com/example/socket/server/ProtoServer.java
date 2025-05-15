@@ -1,15 +1,23 @@
 package com.example.socket.server;
 import java.net.*;
 import java.util.Optional;
+import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.management.Query;
+
+import com.example.model.Chat;
+import com.example.model.ChatInfo;
+import com.example.model.User;
 import com.example.socket.routines.Echo;
 
 import java.io.*;
+import java.lang.classfile.ClassFile.Option;
 /*
  * Recieve all incoming connections
  * 
@@ -57,7 +65,23 @@ public class ProtoServer{
     public void start() throws IOException, ClassNotFoundException
     {
         // create a thread pool to handle all the threads
-        Thread acceptThread = new Thread(() -> {
+        // Thread acceptThread = new Thread(() -> {
+        //     server_parrot.log("Server listening on port: " + PORT);
+        //     while (true) {
+        //         try {
+        //             Socket client = serverSocket.accept();
+        //             executor.execute(() -> handleClient(client));
+        //         } catch (RejectedExecutionException rex) {
+        //             System.err.println("Server overloaded, rejecting connection");
+        //         } catch (IOException io) {
+        //             io.printStackTrace();
+        //         }
+        //     }
+        // });
+        // acceptThread.setDaemon(true);
+        // acceptThread.start();
+
+        new Thread(() -> {
             server_parrot.log("Server listening on port: " + PORT);
             while (true) {
                 try {
@@ -69,9 +93,7 @@ public class ProtoServer{
                     io.printStackTrace();
                 }
             }
-        });
-        acceptThread.setDaemon(true);
-        acceptThread.start();
+        }).start();
     }
 
     public void stop() {
@@ -216,26 +238,6 @@ public class ProtoServer{
         }
         socket.close();
         return;
-            // disconnect and break the connection
-        //     try {
-        //         if (!handleClientProtocol(msg, socket, in, out)) {
-        //             break;
-        //         }
-        //     } catch (Exception e) {
-        //         server_parrot.log("Exception during handling: " + e.getMessage());
-        //         break;
-        //     }
-        // }
-
-        // server_parrot.log("we are here!");
-        // try 
-        // {
-        //     socket.close();
-        //     server_parrot.log("we are successful");
-        // }
-        // catch(Exception e){
-        //     server_parrot.log_err_with_ret(e);
-        // }
 
     }
 
@@ -324,6 +326,12 @@ public class ProtoServer{
                     returnProtocol = handleDelete(msg);
                     break;
 
+                case GET_ALL:
+                    returnProtocol = handleGetAll(msg);
+                    break;
+                case GET_ALL_BY_OBJ:
+                    returnProtocol = handleGetAllByObj(msg);
+                    break;
                 default:
                     returnProtocol = new Protocol(Protocol.Status.CONN_OK,
                                     new Protocol.Packet(
@@ -433,6 +441,128 @@ public class ProtoServer{
 
         
 
+    }
+    
+    public <T> Protocol handleGetAll(Protocol msg) {
+        String clientID = msg.getPacket().getReceiver();
+        Optional<String> typekey = msg.getPacket().getMetaData().getKey();
+
+        // uses typekey to search if a particular database is there
+
+        // if so return all its elements
+        if (!typekey.isPresent()) {
+            return errorResponse(clientID, "GET_ALL failed: No type key provided");
+        }
+
+        QueryHandler<T> handler = findQueryHandlerByTypeKey(typekey.get(), queries);
+        if (handler == null) {
+            return errorResponse(clientID, "GET_ALL failed: No handler for type key " + typekey.get());
+        }
+
+        try {
+            List<T> results = handler.getQuery().getAll();
+
+            return new Protocol(
+                Protocol.Status.CONN_OK,
+                new Protocol.Packet(
+                    name,
+                    clientID,
+                    "GET_ALL success",
+                    new Protocol.Packet.MetaData(
+                        Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK,
+                        results
+                    )
+                )
+            );
+        } catch (Exception e) {
+            return errorResponse(clientID, "GET_ALL failed: " + e.getMessage());
+        }
+    }
+
+
+    // very very big note, this is only for the chat app. It does NOT work in the general case
+    public <T> Protocol handleGetAllByObj(Protocol msg) {
+        String clientID = msg.getPacket().getReceiver();
+
+        // 1) Extract typeKey (child type) and payload (parent stub)
+        Optional<String> childKeyOpt    = msg.getPacket().getMetaData().getKey();
+        Optional<Object> parentStubOpt  = msg.getPacket().getMetaData().getPayload();
+
+        if (childKeyOpt.isEmpty()) {
+            return errorResponse(clientID, "GET_ALL_BY_OBJ failed: No child key provided");
+        }
+        if (parentStubOpt.isEmpty()) {
+            return errorResponse(clientID, "GET_ALL_BY_OBJ failed: No parent payload provided");
+        }
+
+        String childKey    = childKeyOpt.get();           // e.g. "Chat" or "ChatInfo"
+        Object parentStub  = parentStubOpt.get();         // e.g. new User(id) or new Chat(id)
+
+        try {
+            switch (childKey) {
+                case "Chat": {
+                    // 2a) Load the User parent fully
+                    User stubUser = (User) parentStub;
+                    QueryHandler<User> userHandler =
+                        findQueryHandlerByTypeKey("User", queries);
+                    if (userHandler == null) {
+                        throw new IllegalStateException("No handler for User");
+                    }
+                    User managedUser = userHandler.getQuery().get(stubUser.getId());
+
+                    // 3a) Extract all Chat children
+                    Collection<Chat> chats = managedUser.getChats();
+                    return new Protocol(Protocol.Status.CONN_OK,
+                                     new Protocol.Packet(name,
+                                                        clientID,
+                                                         "GET_ALL_OBJ: success", 
+                                                         new Protocol.Packet.MetaData(Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK,
+                                                          chats)
+                                                         ));
+                }
+
+                case "ChatInfo": {
+                    // 2b) Load the Chat parent fully
+                    Chat stubChat = (Chat) parentStub;
+                    QueryHandler<Chat> chatHandler =
+                        findQueryHandlerByTypeKey("Chat", queries);
+                    if (chatHandler == null) {
+                        throw new IllegalStateException("No handler for Chat");
+                    }
+                    Chat managedChat = chatHandler.getQuery().get(stubChat.getId());
+
+                    // 3b) Extract all ChatInfo children
+                    // Note: infos is messages
+                    Collection<ChatInfo> infos = managedChat.getChatInfos();
+                    return new Protocol(Protocol.Status.CONN_OK,
+                                     new Protocol.Packet(name,
+                                                        clientID,
+                                                         "GET_ALL_BY_OBJ: chatInfos for chat " + managedChat.getId(), 
+                                                         new Protocol.Packet.MetaData(Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK,
+                                                         infos)
+                                                         ));
+                }
+
+                default:
+                    return errorResponse(clientID,
+                        "GET_ALL_BY_OBJ failed: Unsupported child key '" + childKey + "'");
+            }
+        } catch (Exception e) {
+            return errorResponse(clientID, "GET_ALL_BY_OBJ failed: " + e.getMessage());
+        }
+    }
+   
+    // TODO: make this used by all the other methods
+    private <T> Protocol errorResponse(String clientID, String message) {
+        return new Protocol(
+            Protocol.Status.CONN_OK,
+            new Protocol.Packet(
+                name,
+                clientID,
+                message,
+                new Protocol.Packet.MetaData(Protocol.Packet.MetaData.CommProtocol.RESPONSE_ERR)
+            )
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -690,12 +820,6 @@ public class ProtoServer{
     // {
     //     database.bindToDataBase(provider);
     // }
-
-
-
-
-
-
 
 // The whole idea is that there is only one server
 // However, that server has subservers that handle individual ORMS

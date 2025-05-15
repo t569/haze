@@ -21,8 +21,6 @@ public class UserApi {
     {
         // Initialize the user object
 
-        // TODO: how do i add chats and other stuff?
-
         // build the request
 
         

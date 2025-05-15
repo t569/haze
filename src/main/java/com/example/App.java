@@ -24,6 +24,8 @@ public class App
         Haze.spoolQuery(Chat.class, chatProvider);
         Haze.spoolQuery(ChatInfo.class, chatInfoProvider);
 
-        Haze.stop();
+
+        // TODO: add a button to close the server from javafx
+        // Haze.stop();
     }
 }

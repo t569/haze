@@ -1,5 +1,7 @@
 package com.example.socket.server;
 
+import java.util.List;
+
 public class DataBindings <T>{
     
     private DataProvider<T> provider;
@@ -17,6 +19,12 @@ public class DataBindings <T>{
         return provider.get(obj);
     }
 
+    public List<T> getAll() throws Exception
+    {
+        ensureProvider();
+        return provider.getAll();
+    }
+    
     public void post(T entity) throws Exception
     {
         ensureProvider();
@@ -35,6 +43,7 @@ public class DataBindings <T>{
         provider.delete(obj);
     }
 
+    
     public void bindToDataBase(DataProvider<T> provider)
     {
         this.provider = provider;
