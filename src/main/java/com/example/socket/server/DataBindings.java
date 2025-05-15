@@ -24,7 +24,7 @@ public class DataBindings <T>{
         ensureProvider();
         return provider.getAll();
     }
-    
+
     public void post(T entity) throws Exception
     {
         ensureProvider();
@@ -49,6 +49,14 @@ public class DataBindings <T>{
         this.provider = provider;
     }
 
+    // override the default provider for ORMs
+    public void close() throws Exception
+    {
+        if (provider != null) {
+            provider.close();
+            provider = null;
+        }
+    }
 
     private void ensureProvider() {
         if (provider == null) {

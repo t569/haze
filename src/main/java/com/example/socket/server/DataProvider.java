@@ -12,4 +12,5 @@ public interface DataProvider<T> {
     void post(T entity) throws Exception;
     void update(T entity) throws Exception;
     void delete(Object obj) throws Exception;
+    void close() throws Exception;
 }

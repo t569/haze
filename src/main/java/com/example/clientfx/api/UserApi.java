@@ -143,6 +143,30 @@ public class UserApi {
         return api.sendRecieve(req);
     } 
 
-}
+    // get all users
+    public CompletableFuture<Protocol> getAllUsers()
+    {
+        // this is a dummy
+        User user = new User();
 
+        // build request
+        Protocol req = new Protocol(
+                            Protocol.Status.CONN_CONF,
+                            new Protocol.Packet(
+                                api.getFxProtoClient().getClient().getClientId(),
+                                api.getFxProtoClient().getClient().getHostName(),
+                                "GET ALL USERS",
+                                new Protocol.Packet.MetaData(
+                                    Protocol.Packet.MetaData.CommProtocol.GET_ALL,
+                                    null,
+                                    user.getClass().getSimpleName()
+                                )
+                            )
+        );  
+        
+        // send the request recieve the response
+        return api.sendRecieve(req);
+    }
+
+}
     

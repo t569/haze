@@ -479,7 +479,7 @@ public class ProtoServer{
         }
     }
 
-
+    // Bad idea i know
     // very very big note, this is only for the chat app. It does NOT work in the general case
     public <T> Protocol handleGetAllByObj(Protocol msg) {
         String clientID = msg.getPacket().getReceiver();

@@ -26,6 +26,10 @@ public class App
 
 
         // TODO: add a button to close the server from javafx
-        // Haze.stop();
+        // end the providers
+        userProvider.close();
+        chatProvider.close();
+        chatInfoProvider.close();
+        Haze.stop();
     }
 }
