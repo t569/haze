@@ -6,50 +6,30 @@ import com.example.clientfx.api.ChatInfoApi;
 import com.example.clientfx.api.UserApi;
 import com.example.clientfx.network.FxProtoClient;
 import com.example.socket.server.ProtoClient;
+import com.example.clientfx.controller.AdminController;
 import com.example.Config;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.scene.Parent;
 
 
-public class ClientApp extends Application{
+public class ClientApp extends Application {
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/main_admin.fxml"));
+        Parent root = loader.load();
 
-        // Connect to the backend
+        // Inject APIs
+        FxProtoClient fx = new FxProtoClient(Config.SERVER_NAME, Config.PORT_NUMBER, "admin");
+        ApiClient apiClient = new ApiClient(fx);
+        AdminController ctrl = loader.getController();
+        ctrl.init(apiClient);
 
-        // FxProtoClient fxProtoClient = new FxProtoClient(Config.SERVER_NAME, Config.PORT_NUMBER, "ClientApp");
-        // ApiClient appClient = new ApiClient(fxProtoClient);
-
-        // UserApi userApi = new UserApi(appClient);
-        // ChatApi chatApi = new ChatApi(appClient);
-        // ChatInfoApi chatInfoApi = new ChatInfoApi(appClient);
-
-        // FXMLLoader loader = new FXMLLoader(getClass().getResource("views/main.fxml"));
-        // Scene scene = new Scene(loader.load());
-
-
-        // Inject API into controller
-        // TODO: make this work
-        // com.example.clientfx.controller.UserListController controller = loader.getController();
-        // controller.setUserApi(userApi);
-
-        // primaryStage.setTitle("Haze Chat - User Dashboard");
-        // primaryStage.setScene(scene);
-        // primaryStage.show();
-
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/main.fxml"));
-        Scene scene = new Scene(loader.load());
-
-        primaryStage.setTitle("Haze Chat - Main");
-        primaryStage.setScene(scene);
+        primaryStage.setTitle("Haze Chat — Admin Dashboard");
+        primaryStage.setScene(new Scene(root));
         primaryStage.show();
-
     }
-
-    public static void main(String[] args)
-    {
-        launch(args);
-    }
+    public static void main(String[] args) { launch(args); }
 }

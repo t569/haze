@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.clientfx.controller.ChatWindowController">
+  <left>
+    <ListView fx:id="peerList" prefWidth="120"/>
+  </left>
+  <center>
+    <VBox>
+      <ListView fx:id="messageList" VBox.vgrow="ALWAYS"/>
+      <HBox>
+        <TextField fx:id="msgField" HBox.hgrow="ALWAYS"/>
+        <Button text="Send" onAction="#onSend"/>
+      </HBox>
+    </VBox>
+  </center>
+</BorderPane>

@@ -9,15 +9,14 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.management.Query;
-
 import com.example.model.Chat;
 import com.example.model.ChatInfo;
 import com.example.model.User;
 import com.example.socket.routines.Echo;
+import com.example.Config;
 
 import java.io.*;
-import java.lang.classfile.ClassFile.Option;
+
 /*
  * Recieve all incoming connections
  * 
@@ -25,7 +24,7 @@ import java.lang.classfile.ClassFile.Option;
 public class ProtoServer{
     private int PORT;
     private ServerSocket serverSocket;
-    private static String name = "localhost";
+    private static String name = Config.SERVER_NAME;
     private static final ConcurrentHashMap<String, Boolean> ackedClients = new ConcurrentHashMap<String, Boolean>();
     private final ConcurrentHashMap<Class<?>, QueryHandler<?>> queries = new ConcurrentHashMap<>();
     private final int maxThreads = 10;
