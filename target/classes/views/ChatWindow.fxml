@@ -1,0 +1,11 @@
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.ChatController">
+    <center>
+        <ListView fx:id="messageList"/>
+    </center>
+    <bottom>
+        <HBox spacing="10" padding="10">
+            <TextField fx:id="messageField" HBox.hgrow="ALWAYS"/>
+            <Button text="Send" onAction="#handleSendMessage"/>
+        </HBox>
+    </bottom>
+</BorderPane>

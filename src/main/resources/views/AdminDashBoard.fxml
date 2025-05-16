@@ -1,0 +1,10 @@
+<TableView fx:id="userTable">
+  <columns>
+    <TableColumn fx:id="idColumn" text="ID" />
+    <TableColumn fx:id="nameColumn" text="Name" />
+  </columns>
+</TableView>
+<Button fx:id="addButton" text="New User" onAction="#onAddUser"/>
+<Button fx:id="editButton" text="Edit User" onAction="#onEditUser"/>
+<Button fx:id="deleteButton" text="Delete User" onAction="#onDeleteUser"/>
+<Button fx:id="selectButton" text="Select User" onAction="#onSelectUser"/>

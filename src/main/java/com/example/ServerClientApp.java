@@ -7,8 +7,8 @@ import com.example.model.Chat;
 import com.example.model.ChatInfo;
 
 import com.example.clientfx.api.ApiClient;
+import com.example.clientfx.controllers.AdminController;
 import com.example.clientfx.network.FxProtoClient;
-import com.example.clientfx.controller.AdminController;
 
 import javafx.application.Application;
 import javafx.application.Platform;
