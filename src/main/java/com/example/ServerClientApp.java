@@ -1,5 +1,6 @@
 package com.example;
 
+import com.example.socket.server.ProtoClient;
 import com.example.socket.server.ProtoServer;
 import com.example.model.User;
 import com.example.model.Chat;
@@ -21,6 +22,7 @@ import javafx.stage.Stage;
 public class ServerClientApp extends Application {
 
     private ProtoServer haze;
+    private FxProtoClient fxClient;
     private ORMProvider<User, Long> userProvider;
     private ORMProvider<Chat, Long> chatProvider;
     private ORMProvider<ChatInfo, Long> chatInfoProvider;
@@ -31,8 +33,6 @@ public class ServerClientApp extends Application {
         Thread serverThread = new Thread(this::initServer, "Server-Thread");
         serverThread.setDaemon(true);
         serverThread.start();
-
-        
 
         // Set up API client and inject into controller
         FxProtoClient fxClient = new FxProtoClient(Config.SERVER_NAME, Config.PORT_NUMBER, "admin");
@@ -65,18 +65,37 @@ public class ServerClientApp extends Application {
     }
 
     private void initServer() {
+       
         haze = new ProtoServer(Config.PORT_NUMBER);
         userProvider = new ORMProvider<>(User.class);
         chatProvider = new ORMProvider<>(Chat.class);
         chatInfoProvider = new ORMProvider<>(ChatInfo.class);
-
-        haze.spoolQuery(User.class, userProvider);
-        haze.spoolQuery(Chat.class, chatProvider);
-        haze.spoolQuery(ChatInfo.class, chatInfoProvider);
+        // start the server
+        try 
+        { 
+            haze.start();
+            haze.spoolQuery(User.class, userProvider);
+            haze.spoolQuery(Chat.class, chatProvider);
+            haze.spoolQuery(ChatInfo.class, chatInfoProvider);
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
+    // TODO: shutdown properly
     private void shutdownEverything() {
-        if (haze != null) haze.stop();
+        try 
+        {
+            haze.stop();
+            
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+       
         if (userProvider != null) userProvider.close();
         if (chatProvider != null) chatProvider.close();
         if (chatInfoProvider != null) chatInfoProvider.close();

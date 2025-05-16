@@ -26,10 +26,12 @@ public class ProtoServer{
     private ServerSocket serverSocket;
     private static String name = Config.SERVER_NAME;
     private static final ConcurrentHashMap<String, Boolean> ackedClients = new ConcurrentHashMap<String, Boolean>();
+    private static final ConcurrentHashMap<String, ObjectOutputStream> ackedClientsOutStreams = new ConcurrentHashMap<String, ObjectOutputStream>();
     private final ConcurrentHashMap<Class<?>, QueryHandler<?>> queries = new ConcurrentHashMap<>();
     private final int maxThreads = 10;
     private final int maxQueue = 20;
     private Echo server_parrot = new Echo(name);
+
 
     // thread pool for spoolign connections
     ThreadPoolExecutor executor = new ThreadPoolExecutor(maxThreads, maxThreads,0L, TimeUnit.MILLISECONDS,  new ArrayBlockingQueue<>(maxQueue), new ThreadPoolExecutor.CallerRunsPolicy());
@@ -86,6 +88,10 @@ public class ProtoServer{
                 try {
                     Socket client = serverSocket.accept();
                     executor.execute(() -> handleClient(client));
+                }catch(SocketException e)
+                {
+                    server_parrot.log("Accept aborted; server closed");
+                    return;
                 } catch (RejectedExecutionException rex) {
                     System.err.println("Server overloaded, rejecting connection");
                 } catch (IOException io) {
@@ -95,6 +101,7 @@ public class ProtoServer{
         }).start();
     }
 
+    // proper stop function
     public void stop() {
         try {
             server_parrot.log("Shutting down server...");
@@ -102,10 +109,52 @@ public class ProtoServer{
             if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
                 executor.shutdownNow();
             }
-            serverSocket.close(); // Close server socket
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
             server_parrot.log_err_with_ret(e);
         }
+
+        ackedClients.forEach((clientId, connected)  -> {
+            if(connected)
+            {
+                try 
+                {
+                    server_parrot.log("Seding disconnect to: " + clientId);
+
+                    ObjectOutputStream client_out = ackedClientsOutStreams.get(clientId);
+
+                    client_out.writeObject(
+                        new Protocol(
+                            Protocol.Status.CONN_DISCONNECT,
+                            new Protocol.Packet(
+                                Config.SERVER_NAME,
+                                clientId,
+                                "Server is shutting down",
+                                new Protocol.Packet.MetaData()
+                            )
+                        )
+                    );
+                    client_out.flush();
+                    client_out.close();
+                }
+                catch(IOException ioe)
+                {
+                    server_parrot.log_err_with_ret(ioe);
+                }
+            }            
+        });
+        ackedClients.clear();
+        ackedClientsOutStreams.clear();
+
+        try{
+            serverSocket.close(); // Close server socket
+        }
+        catch(IOException ioe)
+        {
+            server_parrot.log_err_with_ret(ioe);
+        }
+        server_parrot.log("Server shutdown complete");
     }
 
     
@@ -121,6 +170,8 @@ public class ProtoServer{
     // TODO: use of CONN_CONF seems to be depreciated, meaning has changed
 
     // run this on a thread Note this should run only once
+    
+    // ADHOC IMPLEMENTATION TO SHUTDOWN THE VARIOUS CLIENT CONNECTIONS
     public void handleClient(Socket socket)
     {
         // NETWORK HANDSHAKE
@@ -140,6 +191,11 @@ public class ProtoServer{
                 // handshake successful proceed
                 if(handshake(in, out, socket)){
                 ackedClients.put(clientId, Boolean.TRUE);
+                ackedClientsOutStreams.put(clientId, out);
+
+                // now add the socket to our list of sockets that are active
+
+
                 server_parrot.log("Adding "+ clientId+ " to acked clients");
 
                 // process requests in infinite loop until we break socket connection
@@ -813,12 +869,6 @@ public class ProtoServer{
          return null;
      }
  
-     
-    // remember to actually write the DataProvider
-    // public void bindToDataBase(DataProvider<T> provider)
-    // {
-    //     database.bindToDataBase(provider);
-    // }
 
 // The whole idea is that there is only one server
 // However, that server has subservers that handle individual ORMS

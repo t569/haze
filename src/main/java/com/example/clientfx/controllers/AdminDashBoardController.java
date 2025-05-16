@@ -14,6 +14,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.List;
 
 import com.example.clientfx.api.ApiClient;
@@ -77,7 +78,7 @@ public class AdminDashBoardController {
     {
         // map model properties to table columns
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
-        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("username"));
+        usernameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
 
         // bind the backing list to the TableView
@@ -93,7 +94,8 @@ public class AdminDashBoardController {
 
     // fetch all the users from the server and populate the table
     private void loadUsers()
-    {
+    // Send the GET_ALL request
+    {        
         userApi.getAllUsers().thenAccept(response -> {
             if (response.getPacket().getMetaData().getCommProtocol().get() == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
                 Optional<Object> payload = response.getPacket().getMetaData().getPayload();
@@ -113,7 +115,9 @@ public class AdminDashBoardController {
         });
     }
 
-    // hnalde for create button. read input fields, calls API, and refreshes table
+
+    // handle for create button. read input fields, calls API, and refreshes table
+    @FXML
     private void handleCreateUser(ActionEvent event)
     {
         // Read all the fields
@@ -127,22 +131,57 @@ public class AdminDashBoardController {
             System.err.println("All fields must be filled out");
             return;
         }
-
-        // Construct the user
-        try 
+        else 
         {
-            userApi.createUser(username);
+            // Construct the user
+            try 
+            {
+                System.out.println("Hi "+ username + "!");
+                // userApi.createUser(username);
 
-            // clear input fields upon success
-            usernameField.clear();
+                // // clear input fields upon success
+                // usernameField.clear();
 
-            // reload the user list to show newly added user
-            loadUsers();
+                // reload the user list to show newly added user
+                // loadUsers();
+
+                // Send to the backend
+                userApi.createUser(username).thenAccept(response -> {
+                    if(response.getStatus() == Protocol.Status.CONN_CONF)
+                    {
+                        // check if the response was null i.e we created the user
+                        if(response.getPacket().getMetaData().getPayload().isPresent())
+                        {
+                            // User savedUser = (User) response.getPacket().getMetaData().getPayload().get();
+
+                            // Update the UI
+                            Platform.runLater(() ->{
+                                loadUsers();
+                            });
+                        }
+                        else
+                        {
+                            Platform.runLater(() ->
+                            {
+                                // Handle error
+                                showAlert("Error", "failed to create user", Alert.AlertType.ERROR);
+                            });
+                        }
+                    }
+                }).exceptionally(ex -> {
+                    // Handle error
+                    Platform.runLater(() -> {
+                        showAlert("Error", "Server error" + ex.getMessage(), Alert.AlertType.ERROR);
+                    });
+                    return null;
+                });
+            }
+            catch(Exception e)
+            {
+                System.err.println("Failed to create user: "+ e.getMessage());
+            }
         }
-        catch(Exception e)
-        {
-            System.err.println("Failed to create user: "+ e.getMessage());
-        }
+        
     }
 
      private void showAlert(String title, String content, Alert.AlertType type) {

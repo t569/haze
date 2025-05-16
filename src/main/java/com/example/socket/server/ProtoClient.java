@@ -17,7 +17,10 @@ public class ProtoClient {
         client_parrot = new Echo(clientId);
         try 
         {
+            // The problem line
             this.socket = new Socket(host, port);
+
+            
             this.out = new ObjectOutputStream(socket.getOutputStream());
             this.in = new ObjectInputStream(socket.getInputStream());
             this.clientId = clientId;
@@ -32,6 +35,7 @@ public class ProtoClient {
         catch(IOException e)
         {
             client_parrot.log_err_with_ret(e);
+             throw new UncheckedIOException("Failed to establish connection to server", e);
         }
     }
 

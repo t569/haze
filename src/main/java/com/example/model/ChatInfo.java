@@ -1,6 +1,8 @@
 package com.example.model;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.time.Instant;
 
 /**
@@ -8,7 +10,7 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "chat_infos")
-public class ChatInfo {
+public class ChatInfo implements Serializable{
 
     /** Primary key */
     @Id

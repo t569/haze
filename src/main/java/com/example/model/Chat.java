@@ -1,12 +1,14 @@
 package com.example.model;
 
 import jakarta.persistence.*;
+
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "chats")
-public class Chat {
+public class Chat implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
