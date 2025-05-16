@@ -1,10 +1,41 @@
-<TableView fx:id="userTable">
-  <columns>
-    <TableColumn fx:id="idColumn" text="ID" />
-    <TableColumn fx:id="nameColumn" text="Name" />
-  </columns>
-</TableView>
-<Button fx:id="addButton" text="New User" onAction="#onAddUser"/>
-<Button fx:id="editButton" text="Edit User" onAction="#onEditUser"/>
-<Button fx:id="deleteButton" text="Delete User" onAction="#onDeleteUser"/>
-<Button fx:id="selectButton" text="Select User" onAction="#onSelectUser"/>
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.clientfx.controllers.AdminDashBoardController"
+            prefWidth="600" prefHeight="400">
+
+    <!-- Uniform 10px padding around the whole pane -->
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+
+    <!-- Top: Create User controls -->
+    <top>
+        <HBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <children>
+                <Label text="Username:"/>
+                <TextField fx:id="usernameField" promptText="Enter username"/>
+                <Button fx:id="createButton" text="Create User"/>
+            </children>
+        </HBox>
+    </top>
+
+    <!-- Center: User list table -->
+    <center>
+        <TableView fx:id="userTable">
+            <columns>
+                <TableColumn fx:id="idColumn" text="ID" prefWidth="100"/>
+                <TableColumn fx:id="usernameColumn" text="Username" prefWidth="200"/>
+            </columns>
+        </TableView>
+    </center>
+
+</BorderPane>
