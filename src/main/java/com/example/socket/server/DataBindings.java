@@ -43,7 +43,11 @@ public class DataBindings <T>{
         provider.delete(obj);
     }
 
-    
+    public void deleteAll() throws Exception
+    {
+        ensureProvider();
+        provider.deleteAll();
+    }
     public void bindToDataBase(DataProvider<T> provider)
     {
         this.provider = provider;

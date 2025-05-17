@@ -19,7 +19,7 @@ public class UserApi {
 
     public CompletableFuture<Protocol> createUser(String username)
     {
-        // Initialize the user object
+        
 
         // build the request
 
@@ -41,6 +41,26 @@ public class UserApi {
 
         // send recieve the ting
 
+        return api.sendRecieve(req);
+    }
+
+    public CompletableFuture<Protocol> createUser(User user)
+    {
+        Protocol req = new Protocol(
+                        Protocol.Status.CONN_CONF,
+                        new Protocol.Packet(
+                            api.getFxProtoClient().getClient().getClientId(),
+                            api.getFxProtoClient().getClient().getHostName(),
+                            "CREATE USER",
+                            new Protocol.Packet.MetaData(
+                                Protocol.Packet.MetaData.CommProtocol.POST,
+                                user,
+                                "User"
+                            )
+                        )
+        );
+
+        // send recieve the ting
         return api.sendRecieve(req);
     }
 
@@ -165,6 +185,29 @@ public class UserApi {
         );  
         
         // send the request recieve the response
+        return api.sendRecieve(req);
+    }
+
+    // delete all the users
+    public CompletableFuture<Protocol> deleteAllUsers()
+    {
+        // this is a dummy
+        User user = new User();
+        Protocol req = new Protocol(
+                            Protocol.Status.CONN_CONF,
+                            new Protocol.Packet(
+                                api.getFxProtoClient().getClient().getClientId(),
+                                api.getFxProtoClient().getClient().getHostName(),
+                                "DELETE ALL USERS",
+                                new Protocol.Packet.MetaData(
+                                    Protocol.Packet.MetaData.CommProtocol.DELETE_ALL,
+                                    null,
+                                    user.getClass().getSimpleName()
+                                )
+                            )
+        );
+
+        // send recieve the request
         return api.sendRecieve(req);
     }
 

@@ -194,5 +194,25 @@ public class ORMProvider <T, ID extends Serializable> implements DataProvider<T>
         }
     }
 
+    @Override
+    public void deleteAll() throws Exception
+    {
+        Transaction tx = null;
+        try 
+        {
+            tx = session.beginTransaction();
+            session.createQuery("DELETE FROM " + entityClass.getSimpleName()).executeUpdate();
+            tx.commit();
+        }
+        catch(Exception e)
+        {
+            if(tx != null)
+            {
+                tx.rollback();
+            }
+            throw new Exception("Error deleting all " +entityClass.getSimpleName());
+        }
+    }
+
 
 }

@@ -90,6 +90,7 @@ public class AdminDashBoardController {
         // wire the create button 
         createButton.setOnAction(this::handleCreateUser);
 
+
     }
 
     // fetch all the users from the server and populate the table
@@ -104,6 +105,8 @@ public class AdminDashBoardController {
                     List<User> users = (List<User>) payload.get();
                     Platform.runLater(() -> {
                         userList.setAll(users);
+                        userTable.refresh();
+
                     });
                 }
             } else {
@@ -137,38 +140,22 @@ public class AdminDashBoardController {
             try 
             {
                 System.out.println("Hi "+ username + "!");
-                // userApi.createUser(username);
-
-                // // clear input fields upon success
-                // usernameField.clear();
-
-                // reload the user list to show newly added user
-                // loadUsers();
-
                 // Send to the backend
                 userApi.createUser(username).thenAccept(response -> {
-                    if(response.getStatus() == Protocol.Status.CONN_CONF)
-                    {
-                        // check if the response was null i.e we created the user
-                        if(response.getPacket().getMetaData().getPayload().isPresent())
-                        {
-                            // User savedUser = (User) response.getPacket().getMetaData().getPayload().get();
-
-                            // Update the UI
-                            Platform.runLater(() ->{
-                                loadUsers();
-                            });
-                        }
-                        else
-                        {
-                            Platform.runLater(() ->
-                            {
-                                // Handle error
-                                showAlert("Error", "failed to create user", Alert.AlertType.ERROR);
-                            });
-                        }
-                    }
-                }).exceptionally(ex -> {
+                // Match your server’s success status
+                if (response.getStatus() == Protocol.Status.CONN_OK) {
+                    Platform.runLater(() -> {
+                        usernameField.clear();
+                        loadUsers();
+                        showAlert("Success", "User created successfully", Alert.AlertType.INFORMATION);
+                    });
+                } else {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Failed to create user: " 
+                            + response.getPacket().getText(), Alert.AlertType.ERROR)
+                    );
+                }
+            }).exceptionally(ex -> {
                     // Handle error
                     Platform.runLater(() -> {
                         showAlert("Error", "Server error" + ex.getMessage(), Alert.AlertType.ERROR);

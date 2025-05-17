@@ -384,9 +384,15 @@ public class ProtoServer{
                 case GET_ALL:
                     returnProtocol = handleGetAll(msg);
                     break;
+
                 case GET_ALL_BY_OBJ:
                     returnProtocol = handleGetAllByObj(msg);
                     break;
+
+                case DELETE_ALL:
+                    returnProtocol = handleDeleteAll(msg);
+                    break;
+
                 default:
                     returnProtocol = new Protocol(Protocol.Status.CONN_OK,
                                     new Protocol.Packet(
@@ -794,6 +800,43 @@ public class ProtoServer{
                                                 "DELETE failed: No supplied type Key",
                                                     new Protocol.Packet.MetaData(Protocol.Packet.MetaData.CommProtocol.RESPONSE_ERR)
                                                     )); 
+        }
+    }
+
+    public <T> Protocol handleDeleteAll(Protocol msg)
+    {
+        String clientID = msg.getPacket().getReceiver();
+        Optional<String> typekey = msg.getPacket().getMetaData().getKey();
+
+        // uses typekey to search if a particular database is there
+
+        // if so return all its elements
+        if (!typekey.isPresent()) {
+            return errorResponse(clientID, "DELETE_ALL failed: No type key provided");
+        }
+
+        QueryHandler<T> handler = findQueryHandlerByTypeKey(typekey.get(), queries);
+        if (handler == null) {
+            return errorResponse(clientID, "DELETE_ALL failed: No handler for type key " + typekey.get());
+        }
+
+        try {
+            handler.getQuery().deleteAll();
+
+            return new Protocol(
+                Protocol.Status.CONN_OK,
+                new Protocol.Packet(
+                    name,
+                    clientID,
+                    "DELETE_ALL success",
+                    new Protocol.Packet.MetaData(
+                        Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK,
+                        null
+                    )
+                )
+            );
+        } catch (Exception e) {
+            return errorResponse(clientID, "DELETE_ALL failed: " + e.getMessage());
         }
     }
 

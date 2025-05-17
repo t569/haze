@@ -119,6 +119,7 @@ public class Protocol implements Serializable{
                 POST,
                 UPDATE,
                 DELETE,
+                DELETE_ALL,
                 GET_ALL,
                 GET_ALL_BY_OBJ,
                 RESPONSE_OK,

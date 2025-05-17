@@ -23,7 +23,7 @@
             <children>
                 <Label text="Username:"/>
                 <TextField fx:id="usernameField" promptText="Enter username"/>
-                <Button fx:id="createButton" text="Create User"/>
+                <Button fx:id="createButton" text="Create User" onAction="#handleCreateUser"/>
             </children>
         </HBox>
     </top>
