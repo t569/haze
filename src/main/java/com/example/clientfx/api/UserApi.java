@@ -111,6 +111,25 @@ public class UserApi {
         return api.sendRecieve(req);
     }
 
+    // public CompletableFuture<Protocol> updateUser(long id)
+    // {
+    //     // fetch user with id
+    //     // build the request
+    //     Protocol req = new Protocol(
+    //                         Protocol.Status.CONN_CONF,
+    //                         new Protocol.Packet(
+    //                             api.getFxProtoClient().getClient().getClientId(),
+    //                             api.getFxProtoClient().getClient().getHostName(),
+    //                             "UPDATE USER",
+    //                             new Protocol.Packet.MetaData(
+    //                                 Protocol.Packet.MetaData.CommProtocol.UPDATE,
+    //                                 user,
+    //                                 user.getClass().getSimpleName()
+    //                             )
+    //                         )
+    //     );
+
+    // }
     
     public CompletableFuture<Protocol> deleteUser(long id)
     {
@@ -126,7 +145,7 @@ public class UserApi {
                                 api.getFxProtoClient().getClient().getHostName(),
                                 "DELETE USER",
                                 new Protocol.Packet.MetaData(
-                                    Protocol.Packet.MetaData.CommProtocol.UPDATE,
+                                    Protocol.Packet.MetaData.CommProtocol.DELETE,
                                     id,
                                     user.getClass().getSimpleName()
                                 )

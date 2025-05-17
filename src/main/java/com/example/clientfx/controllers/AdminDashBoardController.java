@@ -4,17 +4,22 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.event.ActionEvent;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.List;
 
 import com.example.clientfx.api.ApiClient;
@@ -84,6 +89,18 @@ public class AdminDashBoardController {
         // bind the backing list to the TableView
         userTable.setItems(userList);
 
+        userTable.setRowFactory(tv -> {
+            TableRow<User> row = new TableRow<>();
+            row.setOnMouseClicked(evt -> {
+                if (!row.isEmpty() && evt.getClickCount() == 2) {
+                    User clicked = row.getItem();
+                    openUserMenu(clicked);
+                }
+            });
+            return row;
+        });
+
+
          // Set placeholder when there's no data
         userTable.setPlaceholder(new Label("No users found"));
 
@@ -93,6 +110,33 @@ public class AdminDashBoardController {
 
     }
 
+    // open menu when a user is clicked
+    private void openUserMenu(User user)
+    {
+        try 
+        {
+            FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/views/UserMenu.fxml")
+            );
+            Parent root = loader.load();
+            UserMenuController ctrl = loader.getController();
+
+            // this reloads the users when the menu is closed
+            ctrl.init(user, userApi, ()-> loadUsers());
+
+            Stage dialog = new Stage();
+            dialog.initOwner(userTable.getScene().getWindow());
+            dialog.initModality(Modality.APPLICATION_MODAL);
+            dialog.setTitle("Manage User: " + user.getName());
+            dialog.setScene(new Scene(root));
+            dialog.showAndWait();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+            showAlert("Error loading user menu: ", e.getMessage(), Alert.AlertType.ERROR);
+        }
+    }
     // fetch all the users from the server and populate the table
     private void loadUsers()
     // Send the GET_ALL request
@@ -134,6 +178,8 @@ public class AdminDashBoardController {
             System.err.println("All fields must be filled out");
             return;
         }
+
+        // TODO: check if the username is already on the table
         else 
         {
             // Construct the user

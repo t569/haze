@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/8"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.clientfx.controllers.UserMenuController"
+      spacing="10">
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+
+    <Label fx:id="userLabel" text="Username" style="-fx-font-size: 16px;"/>
+
+    <Button fx:id="deleteButton" text="Delete User" maxWidth="Infinity"/>
+    <Button fx:id="editButton"   text="Edit User"   maxWidth="Infinity"/>
+    <Button fx:id="loginButton"  text="Login as User" maxWidth="Infinity"/>
+
+</VBox>
