@@ -1,7 +1,13 @@
 package com.example.clientfx.controllers;
 
+import com.example.model.Chat;
 import com.example.model.User;
 import com.example.socket.server.Protocol;
+
+import java.io.IOException;
+
+import com.example.clientfx.api.ChatApi;
+import com.example.clientfx.api.ChatInfoApi;
 import com.example.clientfx.api.UserApi;
 
 import javafx.application.Platform;
@@ -13,7 +19,6 @@ import javafx.scene.Scene;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 
 public class UserMenuController {
@@ -104,15 +109,40 @@ public class UserMenuController {
 
     }
 
-    // TODO: write this
+    // TODO: URGENT, fix this, it doesnt work
     private void loginUser()
     {
         // Open ChatWindow.fxml with this users context
+        try {
+        FXMLLoader loader = new FXMLLoader(
+            getClass().getResource("/views/ChatWindow.fxml")
+        );
+        Parent root = loader.load();
+        ChatWindowController ctrl = loader.getController();
+
+        // construct ChatApi using the user api, chat api and chatinfo api
+        ChatApi chatApi = new ChatApi(userApi.getApi());
+        ChatInfoApi chatInfoApi = new ChatInfoApi(userApi.getApi());
+
+        // initialize the controller with the user, userApi, chatInfoApi and chatApi
+        ctrl.init(user, userApi,chatApi, chatInfoApi); 
+
+        Stage stage = new Stage();
+        stage.initOwner(userLabel.getScene().getWindow());
+        stage.initModality(Modality.NONE);
+        stage.setTitle("Chat — " + user.getName());
+        stage.setScene(new Scene(root, 800, 600));
+        stage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert("Error", "Cannot open chat window: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
     
     private void closeWindow()
     {
         Stage stage = (Stage) userLabel.getScene().getWindow();
+        stage.close();
     }
 
     private void showAlert(String title, String content, Alert.AlertType type) {

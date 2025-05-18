@@ -1,5 +1,6 @@
 package com.example.clientfx.api;
 
+import com.example.model.Chat;
 import com.example.model.ChatInfo;
 import com.example.socket.server.Protocol;
 
@@ -92,6 +93,44 @@ public class ChatInfoApi {
                 new Protocol.Packet.MetaData(
                     Protocol.Packet.MetaData.CommProtocol.DELETE,
                     id,
+                    ChatInfo.class.getSimpleName()
+                )
+            )
+        );
+        return api.sendRecieve(req);
+    }
+
+    public CompletableFuture<Protocol> getMessage(long messageid)
+    {
+        return getChatInfo(messageid);
+    }
+
+    public CompletableFuture<Protocol> createMessage(long chatId, long sentByUserId, String text)
+    {
+        return createChatInfo(chatId, sentByUserId, text);
+    }
+    
+    public CompletableFuture<Protocol> editMessage(ChatInfo chatinfo)
+    {
+        return updateChatInfo(chatinfo);
+    }
+
+    public CompletableFuture<Protocol> deleteMessage(long messageid)
+    {
+        return deleteChatInfo(messageid);
+    }
+
+    public CompletableFuture<Protocol> getAllMessages(long chatId) {
+        Chat stub = new Chat(); stub.setId(chatId);
+        Protocol req = new Protocol(
+            Protocol.Status.CONN_CONF,
+            new Protocol.Packet(
+                api.getFxProtoClient().getClient().getClientId(),
+                api.getFxProtoClient().getClient().getHostName(),
+                "GET_ALL_MESSAGES",
+                new Protocol.Packet.MetaData(
+                    Protocol.Packet.MetaData.CommProtocol.GET_ALL_BY_OBJ,
+                    stub,
                     ChatInfo.class.getSimpleName()
                 )
             )

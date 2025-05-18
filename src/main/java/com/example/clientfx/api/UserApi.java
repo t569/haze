@@ -33,7 +33,7 @@ public class UserApi {
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.POST,
                                     new User(username),
-                                    "User"
+                                    User.class.getSimpleName()
                                 )
                             )
         );
@@ -55,7 +55,7 @@ public class UserApi {
                             new Protocol.Packet.MetaData(
                                 Protocol.Packet.MetaData.CommProtocol.POST,
                                 user,
-                                "User"
+                                User.class.getSimpleName()
                             )
                         )
         );
@@ -79,7 +79,7 @@ public class UserApi {
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.UPDATE,
                                     user_updated,
-                                    user_updated.getClass().getSimpleName()
+                                    User.class.getSimpleName()
                                     
                                 )
                             )
@@ -102,7 +102,7 @@ public class UserApi {
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.UPDATE,
                                     user,
-                                    user.getClass().getSimpleName()
+                                    User.class.getSimpleName()
                                 )
                             )
         );
@@ -133,10 +133,6 @@ public class UserApi {
     
     public CompletableFuture<Protocol> deleteUser(long id)
     {
-        // this is a dummy
-        User user = new User();
-
-
         // build the request
         Protocol req = new Protocol(
                             Protocol.Status.CONN_CONF,
@@ -147,7 +143,7 @@ public class UserApi {
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.DELETE,
                                     id,
-                                    user.getClass().getSimpleName()
+                                    User.class.getSimpleName()
                                 )
                             )
         );
@@ -159,10 +155,6 @@ public class UserApi {
     // get user by id
     public CompletableFuture<Protocol> getUser(long id)
     {
-         // this is a dummy
-        User user = new User();
-
-
         // build request
         Protocol req = new Protocol(
                             Protocol.Status.CONN_CONF,
@@ -173,7 +165,7 @@ public class UserApi {
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.GET,
                                     id,
-                                    user.getClass().getSimpleName()
+                                    User.class.getSimpleName()
                                 )
                             )
         );  
@@ -210,8 +202,6 @@ public class UserApi {
     // delete all the users
     public CompletableFuture<Protocol> deleteAllUsers()
     {
-        // this is a dummy
-        User user = new User();
         Protocol req = new Protocol(
                             Protocol.Status.CONN_CONF,
                             new Protocol.Packet(
@@ -221,7 +211,7 @@ public class UserApi {
                                 new Protocol.Packet.MetaData(
                                     Protocol.Packet.MetaData.CommProtocol.DELETE_ALL,
                                     null,
-                                    user.getClass().getSimpleName()
+                                    User.class.getSimpleName()
                                 )
                             )
         );

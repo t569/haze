@@ -15,11 +15,15 @@ public class Chat implements Serializable {
     private Long id;
 
     /** Many Users ↔️ Many Chats (inverse side) */
-    @ManyToMany(mappedBy = "chats")
+    @ManyToMany(mappedBy = "chats", fetch=FetchType.EAGER)
     private Set<User> users = new HashSet<>();
 
     /** One Chat → Many ChatInfos (Messages) */
-    @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "chat",
+                cascade = CascadeType.ALL,
+                orphanRemoval = true,
+                fetch = FetchType.EAGER
+    )
     private Set<ChatInfo> chatInfos = new HashSet<>();
 
     public Chat() {}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.clientfx.controllers.EditMessageController"
+      spacing="10" padding="10">
+
+    <Label text="Edit Message:" />
+    <TextField fx:id="messageField" />
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button fx:id="saveButton" text="Save" />
+        <Button text="Cancel" onAction="#onCancel" />
+    </HBox>
+</VBox>

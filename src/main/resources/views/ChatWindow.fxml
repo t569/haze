@@ -1,11 +1,34 @@
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="controllers.ChatController">
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.clientfx.controllers.ChatWindowController">
+
+    <left>
+        <VBox spacing="10" fx:id="chatSidebar" prefWidth="200" style="-fx-background-color: #ECECEC;">
+            <!-- match controller’s method name -->
+            <Button fx:id="addChatButton" text="Add Chat" onAction="#openCreateChatDialog"/>
+            <!-- fix fx:id to match field chatListView -->
+            <ListView fx:id="chatListView"/>
+        </VBox>
+    </left>
+
     <center>
-        <ListView fx:id="messageList"/>
+        <VBox spacing="5" fx:id="chatArea" style="-fx-padding: 10;">
+            <!-- Chat messages will be dynamically added here -->
+        </VBox>
     </center>
+
     <bottom>
-        <HBox spacing="10" padding="10">
-            <TextField fx:id="messageField" HBox.hgrow="ALWAYS"/>
-            <Button text="Send" onAction="#handleSendMessage"/>
+        <HBox spacing="5">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <TextField fx:id="messageInput" promptText="Type a message..." />
+               <Button fx:id="sendButton"  text="Send"  onAction="#sendMessage"/>
         </HBox>
     </bottom>
 </BorderPane>

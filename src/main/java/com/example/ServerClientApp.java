@@ -1,6 +1,5 @@
 package com.example;
 
-import com.example.socket.server.ProtoClient;
 import com.example.socket.server.ProtoServer;
 import com.example.model.User;
 import com.example.model.Chat;

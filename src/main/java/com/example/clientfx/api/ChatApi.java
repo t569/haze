@@ -1,6 +1,7 @@
 package com.example.clientfx.api;
 
 import com.example.model.Chat;
+import com.example.model.User;
 import com.example.socket.server.Protocol;
 
 import java.util.List;
@@ -15,6 +16,28 @@ public class ChatApi {
 
     public ApiClient getApi() {
         return this.api;
+    }
+
+    /** Retrieve a Chat between two users by their IDs */
+    // TODO: rewrite this to retrieve chats between two users
+    public CompletableFuture<Protocol> getChatBetween(long first_id, long second_id) {
+        Chat stub = new Chat();
+        stub.addUser(new User() {{ setId(first_id); }});
+        stub.addUser(new User() {{ setId(second_id); }});
+        Protocol req = new Protocol(
+            Protocol.Status.CONN_CONF,
+            new Protocol.Packet(
+                api.getFxProtoClient().getClient().getClientId(),
+                api.getFxProtoClient().getClient().getHostName(),
+                "GET_CHAT_BETWEEN",
+                new Protocol.Packet.MetaData(
+                    Protocol.Packet.MetaData.CommProtocol.GET_ALL_BY_OBJ,
+                    stub,
+                    Chat.class.getSimpleName()
+                )
+            )
+        );
+        return api.sendRecieve(req);
     }
 
     /** Create a new Chat with the given list of user IDs */
@@ -44,6 +67,51 @@ public class ChatApi {
         );
         return api.sendRecieve(req);
     }
+
+    /** Retrieve all Chats for a given user ID */
+    public CompletableFuture<Protocol> getChatsForUser(long userid)
+    {
+        User stub = new User();
+        stub.setId(userid);
+
+        Protocol req = new Protocol(
+            Protocol.Status.CONN_CONF,
+            new Protocol.Packet(
+                api.getFxProtoClient().getClient().getClientId(),
+                api.getFxProtoClient().getClient().getHostName(),
+                "GET ALL CHATS FOR USER",
+                new Protocol.Packet.MetaData(
+                    Protocol.Packet.MetaData.CommProtocol.GET_ALL_BY_OBJ,
+                    stub,
+                    Chat.class.getSimpleName()
+                )
+            )
+        );
+        return api.sendRecieve(req);
+    }
+
+
+    public CompletableFuture<Protocol> getChatPartners(long chatId)
+    {
+        Chat chatStub = new Chat();
+        chatStub.setId(chatId);
+
+        Protocol req = new Protocol(
+            Protocol.Status.CONN_CONF,
+            new Protocol.Packet(
+                api.getFxProtoClient().getClient().getClientId(),
+                api.getFxProtoClient().getClient().getHostName(),
+                "GET CHAT PARTNERS",
+                new Protocol.Packet.MetaData(
+                    Protocol.Packet.MetaData.CommProtocol.GET_ALL_BY_OBJ,
+                    chatStub,
+                    Chat.class.getSimpleName()
+                )
+            )
+        );
+        return api.sendRecieve(req);
+    }
+
 
     /** Retrieve a Chat by its ID */
     public CompletableFuture<Protocol> getChat(long id) {
@@ -98,4 +166,46 @@ public class ChatApi {
         );
         return api.sendRecieve(req);
     }
+
+    // public CompletableFuture<List<User>> getChatPartners(long userId) {
+    //     // Build a stub User with only id set
+    //     User stub = new User();
+    //     stub.setId(userId);
+
+    //     // Build a GET_ALL_BY_OBJ request: key = "Chat", payload = stub User
+    //     Protocol req = new Protocol(
+    //         Protocol.Status.CONN_CONF,
+    //         new Protocol.Packet(
+    //             api.getFxProtoClient().getClient().getClientId(),
+    //             api.getFxProtoClient().getClient().getHostName(),
+    //             "GET_ALL_BY_OBJ Chats for User",
+    //             new Protocol.Packet.MetaData(
+    //                 Protocol.Packet.MetaData.CommProtocol.GET_ALL_BY_OBJ,
+    //                 stub,
+    //                 "Chat"  // since we're fetching Chat children of the User
+    //             )
+    //         )
+    //     );
+
+    //     // Send and parse the response
+    //     return api.sendRecieve(req)
+    //         .thenApply(response -> {
+    //             // Only proceed if server indicates success
+    //             if (response.getPacket().getMetaData().getCommProtocol().get()
+    //                     != Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
+    //                 throw new RuntimeException("Failed to fetch chats for user " + userId);
+    //             }
+    //             @SuppressWarnings("unchecked")
+    //             List<Chat> chats = (List<Chat>) response.getPacket()
+    //                                                    .getMetaData()
+    //                                                    .getPayload()
+    //                                                    .orElse(List.of());
+    //             // From each Chat, collect all participants except the requesting user
+    //             return chats.stream()
+    //                 .flatMap(chat -> chat.getUsers().stream())
+    //                 .filter(u -> u.getId() != userId)
+    //                 .distinct()
+    //                 .toList();
+    //         });
+    // }
 }
