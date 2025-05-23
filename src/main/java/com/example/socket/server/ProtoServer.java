@@ -175,13 +175,13 @@ public class ProtoServer{
     public void handleClient(Socket socket)
     {
         // NETWORK HANDSHAKE
-
+        ObjectInputStream in = null;
+        ObjectOutputStream out = null;
         // under this model we will first 
-        try(
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream  in  = new ObjectInputStream(socket.getInputStream());
-        )
+        try
         {
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in  = new ObjectInputStream(socket.getInputStream());
             // get the name of the client first
             String clientId = (String) in.readObject();
 
@@ -659,13 +659,17 @@ public class ProtoServer{
 
 
        try 
-       {
+       {    
+        // we're sending it back because we still need to use it in the front end
+        // TODO: we need to make that design better
             handler.getQuery().post((T) object_to_post);
             return new Protocol(Protocol.Status.CONN_OK,
                                  new Protocol.Packet(name,
                                                     clientID,
                                                      "POST: success",
-                                                      new Protocol.Packet.MetaData(Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK)
+                                                      new Protocol.Packet.MetaData(
+                                                        Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK,
+                                                        object_to_post)
                                                     ));
        }
        catch(Exception e)

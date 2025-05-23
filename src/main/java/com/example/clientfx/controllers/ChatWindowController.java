@@ -18,53 +18,58 @@ import com.example.model.User;
 import com.example.socket.server.Protocol;
 
 import java.io.IOException;
-import java.util.*;
 import java.net.URL;
+import java.util.Collection;
+import java.util.List;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class ChatWindowController implements Initializable {
 
-    @FXML private ListView<User> chatListView;
-    @FXML private VBox chatArea;
-    @FXML private TextField messageInput;
-    @FXML private Button sendButton;
-    @FXML private Button addChatButton;
+    @FXML private ListView<Chat> chatListView;
+    @FXML private VBox       chatArea;
+    @FXML private TextField  messageInput;
+    @FXML private Button     sendButton;
+    @FXML private Button     addChatButton;
 
-    private User loggedInUser;
-    private UserApi userApi;
-    private ChatApi chatApi;
-    private ChatInfoApi chatInfoApi;
+    private User          loggedInUser;
+    private UserApi       userApi;
+    private ChatApi       chatApi;
+    private ChatInfoApi   chatInfoApi;
 
-    // The currently open chat conversation
     private Chat currentChat;
-
-    // Sidebar list of chat partners
-    private final ObservableList<User> chatPartners = FXCollections.observableArrayList();
-
-    // Keep track of all loaded chats so we can check duplicates
-    private List<Chat> loadedChats = new ArrayList<>();
+    private final ObservableList<Chat> loadedChats  = FXCollections.observableArrayList();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Sidebar shows user names
-        chatListView.setItems(chatPartners);
+        // 1) UI wiring only—no access to loggedInUser yet:
         chatListView.setCellFactory(lv -> new ListCell<>() {
-            @Override protected void updateItem(User u, boolean empty) {
-                super.updateItem(u, empty);
-                setText(empty || u==null ? null : u.getName());
+            @Override protected void updateItem(Chat chat, boolean empty) {
+                super.updateItem(chat, empty);
+                setText(empty || chat == null ? null : chat.getName() != null && !chat.getName().isBlank()
+                    ? chat.getName()
+                    : chat.getUsers().stream()
+                          .map(User::getName)
+                          .collect(Collectors.joining(", "))
+                );
             }
         });
-        chatListView.getSelectionModel().selectedItemProperty().addListener(
-            (obs, oldU, newU) -> { if(newU!=null) openChatWith(newU); }
-        );
 
-        // Button handlers
+        chatListView.getSelectionModel().selectedItemProperty().addListener((obs, oldC, newC) -> {
+            if (newC != null) {
+                openChat(newC);
+            }
+        });
+
         sendButton.setOnAction(e -> sendMessage());
         addChatButton.setOnAction(e -> openCreateChatDialog());
     }
 
-    /** Must be called by launcher to wire APIs and then seed the sidebar */
+    /**
+     * MUST be called immediately after FXMLLoader.load() to set up APIs and
+     * then drive initial data load.
+     */
     public void init(User loggedInUser,
                      UserApi userApi,
                      ChatApi chatApi,
@@ -74,192 +79,147 @@ public class ChatWindowController implements Initializable {
         this.chatApi      = chatApi;
         this.chatInfoApi  = chatInfoApi;
 
+        // Now load the chats into the sidebar
         loadUserChats();
     }
 
-    /** Loads all existing chats for this user into sidebar and cache */
     private void loadUserChats() {
-    chatApi.getChatsForUser(loggedInUser.getId())
-        .thenAccept(response -> {
-            if (response.getStatus() != Protocol.Status.CONN_OK) {
-                Platform.runLater(() ->
-                    showAlert("Error", "Server status: " + response.getStatus(), Alert.AlertType.ERROR)
-                );
-                return;
-            }
-
-            // Check that the payload was marked OK
-            if (response.getPacket().getMetaData().getCommProtocol()
-                    .filter(cp -> cp == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK)
-                    .isEmpty()) {
-                Platform.runLater(() ->
-                    showAlert("Error", "Unexpected protocol: " +
-                        response.getPacket().getMetaData().getCommProtocol(), Alert.AlertType.ERROR)
-                );
-                return;
-            }
-
-            // Now unwrap – it’ll be a PersistentSet, so cast to Collection<Chat> first
-            var payload = response.getPacket().getMetaData().getPayload();
-            if (payload.isEmpty()) {
-                System.err.println("loadUserChats: no payload");
-                return;
-            }
-
-            @SuppressWarnings("unchecked")
-            Collection<Chat> chatCollection = (Collection<Chat>) payload.get();
-
-            // Copy into a List for your own use
-            List<Chat> chats = new ArrayList<>(chatCollection);
-
-            // Cache for duplicate‑chat checks
-            this.loadedChats = chats;
-
-            // Build sidebar partners
-            List<User> partners = chats.stream()
-                .flatMap(c -> c.getUsers().stream())
-                .filter(u -> !u.getId().equals(loggedInUser.getId()))
-                .distinct()
-                .toList();
-
-            Platform.runLater(() -> chatPartners.setAll(partners));
-        })
-        .exceptionally(ex -> {
-            Platform.runLater(() ->
-                showAlert("Error", "Failed to load chats: " + ex.getMessage(), Alert.AlertType.ERROR)
-            );
-            return null;
-        });
-}
-
-
-    /**
-     * If a conversation with that partner is already loaded, use it directly;
-     * otherwise request or create it on the backend.
-     */
-    private void openChatWith(User partner) {
-        // see if we already have a chat containing exactly {me, partner}
-        Optional<Chat> existing = loadedChats.stream()
-            .filter(c -> {
-                Set<Long> ids = c.getUsers().stream()
-                                  .map(User::getId)
-                                  .collect(Collectors.toSet());
-                return ids.equals(Set.of(loggedInUser.getId(), partner.getId()));
-            })
-            .findFirst();
-
-        CompletableFuture<Protocol> future;
-        if (existing.isPresent()) {
-            // fetch full chat to get latest messages
-            currentChat = existing.get();
-            future = chatApi.getChat(currentChat.getId());
-        } else {
-            // ask server to create new chat
-            future = chatApi.createChat(List.of(loggedInUser.getId(), partner.getId()));
-        }
-
-        future.thenAccept(proto -> {
-            if(proto.getPacket().getMetaData().getCommProtocol().orElse(null)
-                    == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
-                Chat c = (Chat)proto.getPacket().getMetaData()
-                                    .getPayload().orElse(null);
-                if(c!=null) {
-                    currentChat = c;
-                    if (!loadedChats.contains(c)) {
-                        loadedChats.add(c);
-                        // update sidebar if truly new
-                        Platform.runLater(() ->
-                            chatPartners.add(partner)
-                        );
-                    }
-                    renderChat(c);
+        chatApi.getChatsForUser(loggedInUser.getId())
+            .thenAccept(response -> {
+                if (response.getStatus() != Protocol.Status.CONN_OK) {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Server status: " + response.getStatus(), Alert.AlertType.ERROR)
+                    );
+                    return;
                 }
-            } else {
-                showAlert("Error", "Could not open chat", Alert.AlertType.ERROR);
-            }
-        }).exceptionally(ex -> {
-            showAlert("Error", "Chat error: " + ex.getMessage(), Alert.AlertType.ERROR);
-            return null;
-        });
+
+                var comm = response.getPacket().getMetaData().getCommProtocol();
+                if (comm.isEmpty() || comm.get() != Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Unexpected protocol: " + comm, Alert.AlertType.ERROR)
+                    );
+                    return;
+                }
+
+                var payload = response.getPacket().getMetaData().getPayload();
+                if (payload.isEmpty()) return;
+
+                @SuppressWarnings("unchecked")
+                Collection<Chat> set = (Collection<Chat>) payload.get();
+
+                Platform.runLater(() -> {
+                    loadedChats.setAll(set);
+                    chatListView.setItems(loadedChats);
+                });
+            })
+            .exceptionally(ex -> {
+                Platform.runLater(() ->
+                    showAlert("Error", "Failed to load chats: " + ex.getMessage(), Alert.AlertType.ERROR)
+                );
+                return null;
+            });
     }
 
-    /** Renders messages of a chat and scrolls to bottom */
+    /** Fetches/up‑dates the given chat then renders its messages. */
+    private void openChat(Chat chat) {
+        chatApi.getChat(chat.getId())
+            .thenAccept(response -> {
+                if (response.getStatus() != Protocol.Status.CONN_OK) {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Server error: " + response.getStatus(), Alert.AlertType.ERROR)
+                    );
+                    return;
+                }
+
+                var comm = response.getPacket().getMetaData().getCommProtocol();
+                if (comm.isEmpty() || comm.get() != Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Protocol error: " + comm, Alert.AlertType.ERROR)
+                    );
+                    return;
+                }
+
+                @SuppressWarnings("unchecked")
+                Chat fresh = (Chat) response.getPacket().getMetaData().getPayload().orElse(null);
+                if (fresh != null) {
+                    currentChat = fresh;
+                    renderChat(fresh);
+                }
+            })
+            .exceptionally(ex -> {
+                Platform.runLater(() ->
+                    showAlert("Error", "Failed to open chat: " + ex.getMessage(), Alert.AlertType.ERROR)
+                );
+                return null;
+            });
+    }
+
+    /** Renders all ChatInfo messages for the active `currentChat`. */
     private void renderChat(Chat chat) {
         chatInfoApi.getAllMessages(chat.getId())
-            .thenAccept(proto -> {
-                if(proto.getPacket().getMetaData().getCommProtocol().orElse(null)
-                        == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
-                    @SuppressWarnings("unchecked")
-                    List<ChatInfo> msgs = (List<ChatInfo>)
-                        proto.getPacket().getMetaData().getPayload().orElse(List.of());
+            .thenAccept(response -> {
+                var comm = response.getPacket().getMetaData().getCommProtocol().orElse(null);
+                if (comm != Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Load messages failed: " + comm, Alert.AlertType.ERROR)
+                    );
+                    return;
+                }
 
+                @SuppressWarnings("unchecked")
+                List<ChatInfo> msgs = (List<ChatInfo>)
+                    response.getPacket().getMetaData().getPayload().orElse(List.of());
+
+                Platform.runLater(() -> {
+                    chatArea.getChildren().clear();
+                    for (ChatInfo m : msgs) {
+                        Label lbl = new Label(m.getText());
+                        lbl.getStyleClass().add(
+                            m.getSentBy().getId().equals(loggedInUser.getId())
+                                ? "msg-sent" : "msg-received"
+                        );
+                        lbl.setOnMouseClicked(e -> openEditMessageDialog(m));
+                        chatArea.getChildren().add(lbl);
+                    }
+                });
+            });
+    }
+
+    /** Sends a new message, then re‑renders the current chat. */
+    @FXML private void sendMessage() {
+        if (currentChat == null) return;
+        String text = messageInput.getText().trim();
+        if (text.isEmpty()) return;
+
+        chatInfoApi.createChatInfo(currentChat.getId(), loggedInUser.getId(), text)
+            .thenAccept(response -> {
+                var comm = response.getPacket().getMetaData().getCommProtocol().orElse(null);
+                if (comm == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
                     Platform.runLater(() -> {
-                        chatArea.getChildren().clear();
-                        msgs.forEach(m -> {
-                            Label lbl = new Label(m.getText());
-                            lbl.getStyleClass().add(
-                                m.getSentBy().getId().equals(loggedInUser.getId())
-                                    ? "msg-sent" : "msg-received"
-                            );
-                            lbl.setOnMouseClicked(e -> openEditMessageDialog(m));
-                            chatArea.getChildren().add(lbl);
-                        });
+                        messageInput.clear();
+                        renderChat(currentChat);
                     });
+                } else {
+                    Platform.runLater(() ->
+                        showAlert("Error", "Send failed: " + comm, Alert.AlertType.ERROR)
+                    );
                 }
             });
     }
 
-    /** Sends a new message, then reloads current chat */
-    @FXML private void sendMessage() {
-        if (currentChat==null) return;
-        String text = messageInput.getText().trim();
-        if(text.isEmpty()) return;
-
-        chatInfoApi.createChatInfo(
-            currentChat.getId(),
-            loggedInUser.getId(),
-            text
-        ).thenAccept(proto -> {
-            if(proto.getPacket().getMetaData().getCommProtocol().orElse(null)
-                    == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
-                Platform.runLater(() -> {
-                    messageInput.clear();
-                    renderChat(currentChat);
-                });
-            } else {
-                showAlert("Error","Send failed",Alert.AlertType.ERROR);
-            }
-        });
-    }
-
-    /** Opens the “Create Chat” dialog */
+    /** Pops up the “Create Chat” dialog; on success, adds and opens it. */
     @FXML private void openCreateChatDialog() {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/views/CreateChatDialog.fxml")
-            );
-            Parent root = loader.load();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/CreateChatDialog.fxml"));
+            Parent root    = loader.load();
             CreateChatDialogController dc = loader.getController();
-            dc.init(userApi,
-                    chatApi,
-                    loggedInUser,
-                    loadedChats,
-                    newChat -> {
-                        // once created, add to cache, sidebar and open it
-                        loadedChats.add(newChat);
-                        Platform.runLater(() -> {
-                            chatPartners.addAll(
-                                newChat.getUsers().stream()
-                                       .filter(u -> !u.getId().equals(loggedInUser.getId()))
-                                       .toList()
-                            );
-                            openChatWith(
-                                newChat.getUsers().stream()
-                                       .filter(u -> !u.getId().equals(loggedInUser.getId()))
-                                       .findFirst().orElse(null)
-                            );
-                        });
-                    });
+            dc.init(userApi, chatApi, loggedInUser, loadedChats, newChat -> {
+                loadedChats.add(newChat);
+                Platform.runLater(() -> {
+                    chatListView.getSelectionModel().select(newChat);
+                    openChat(newChat);
+                });
+            });
 
             Stage dlg = new Stage();
             dlg.initOwner(chatListView.getScene().getWindow());
@@ -267,17 +227,16 @@ public class ChatWindowController implements Initializable {
             dlg.setTitle("New Chat");
             dlg.setScene(new Scene(root));
             dlg.showAndWait();
-        } catch(IOException ex) {
-            showAlert("Error","Cannot open dialog: "+ex.getMessage(),Alert.AlertType.ERROR);
+
+        } catch (IOException ex) {
+            showAlert("Error", "Cannot open dialog: " + ex.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
-    /** Opens an edit‑message dialog; on save we reload the chat */
+    /** Pop up edit‐message window; on save, re‑render current chat. */
     private void openEditMessageDialog(ChatInfo info) {
         try {
-            FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/views/EditMessage.fxml")
-            );
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/EditMessage.fxml"));
             Parent root = loader.load();
             EditMessageController ctrl = loader.getController();
             ctrl.init(info, chatInfoApi, updated -> Platform.runLater(() -> renderChat(currentChat)));
@@ -288,12 +247,12 @@ public class ChatWindowController implements Initializable {
             dlg.setTitle("Edit Message");
             dlg.setScene(new Scene(root));
             dlg.showAndWait();
-        } catch(IOException ex) {
-            showAlert("Error","Cannot open edit dialog: "+ex.getMessage(),Alert.AlertType.ERROR);
+        } catch (IOException ex) {
+            showAlert("Error", "Cannot open edit dialog: " + ex.getMessage(), Alert.AlertType.ERROR);
         }
     }
 
-    /** Generic FX alert helper */
+    /** Thread‑safe FX alert helper. */
     private void showAlert(String title, String msg, Alert.AlertType type) {
         Platform.runLater(() -> {
             Alert a = new Alert(type, msg, ButtonType.OK);

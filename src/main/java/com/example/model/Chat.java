@@ -3,6 +3,7 @@ package com.example.model;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,6 +27,13 @@ public class Chat implements Serializable {
     )
     private Set<ChatInfo> chatInfos = new HashSet<>();
 
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime createdAt;
+
+
     public Chat() {}
 
     // Getters and setters
@@ -35,6 +43,20 @@ public class Chat implements Serializable {
     }
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
     public Set<User> getUsers() {
         return users;

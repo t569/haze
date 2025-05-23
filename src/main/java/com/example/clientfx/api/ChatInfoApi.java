@@ -1,6 +1,7 @@
 package com.example.clientfx.api;
 
 import com.example.model.Chat;
+import com.example.model.User;
 import com.example.model.ChatInfo;
 import com.example.socket.server.Protocol;
 
@@ -27,8 +28,13 @@ public class ChatInfoApi {
     public CompletableFuture<Protocol> createChatInfo(long chatId, long sentByUserId, String text) {
         // Build the ChatInfo with timestamp, sender, chat reference, and text
         ChatInfo info = new ChatInfo(Instant.now(), null, text);
-        info.setSentBy(new com.example.model.User() {{ setId(sentByUserId); }});
-        info.setChat(new com.example.model.Chat() {{ setId(chatId); }});
+        User user_for_info = new User();
+        Chat chat_for_info = new Chat();
+        user_for_info.setId(sentByUserId);
+        chat_for_info.setId(chatId);
+        info.setTimestamp(Instant.now());
+        info.setSentBy(user_for_info);
+        info.setChat(chat_for_info);
 
         Protocol req = new Protocol(
             Protocol.Status.CONN_CONF,

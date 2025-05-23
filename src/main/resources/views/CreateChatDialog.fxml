@@ -6,15 +6,22 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.example.clientfx.controllers.CreateChatDialogController"
-      spacing="10" padding="10">
+      spacing="10">
 
     <Label text="Select participants:"/>
     <ListView fx:id="availableUsersList" prefHeight="200"/>
+
     <Label text="Chat Name:"/>
     <TextField fx:id="chatNameField" promptText="Enter chat name"/>
 
     <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="Cancel" onAction="#onCancel"/>
-        <Button text="Create" fx:id="createButton" onAction="#onCreateChat"/>
+        <!-- Cancel button now has an fx:id and matches onCancel() -->
+        <Button fx:id="cancelButton"
+                text="Cancel"
+                onAction="#onCancel"/>
+        <!-- Create button already had fx:id and onCreateChat() -->
+        <Button fx:id="createButton"
+                text="Create"
+                onAction="#onCreateChat"/>
     </HBox>
 </VBox>

@@ -20,11 +20,14 @@ public class CreateChatDialogController {
     @FXML private ListView<User> availableUsersList;
     @FXML private TextField chatNameField;
     @FXML private Button createButton;
+    @FXML private Button cancelButton;
 
     private UserApi userApi;
     private ChatApi chatApi;
     private User self;
-    private List<Chat> existingChats;
+
+    // must be observablelist for auto update Ui
+    private ObservableList<Chat> existingChats;
     private Consumer<Chat> onChatCreated;
 
     private final ObservableList<User> allUsers = FXCollections.observableArrayList();
@@ -41,7 +44,7 @@ public class CreateChatDialogController {
     public void init(UserApi userApi,
                      ChatApi chatApi,
                      User self,
-                     List<Chat> existingChats,
+                     ObservableList<Chat> existingChats,
                      Consumer<Chat> onChatCreated) {
         this.userApi       = userApi;
         this.chatApi       = chatApi;
@@ -64,6 +67,18 @@ public class CreateChatDialogController {
             }
         });
 
+        // lets make it actually show their names please
+        availableUsersList.setCellFactory(avuserlist -> new ListCell<>() {
+            @Override
+            protected void updateItem(User user, boolean empty) {
+                super.updateItem(user, empty);
+                if (empty || user == null) {
+                    setText(null);
+                } else {
+                    setText(user.getName());
+                }
+            }
+        });
         loadAllUsers();
     }
 
@@ -113,8 +128,9 @@ public class CreateChatDialogController {
         }
 
         // Create the new chat on backend
+        // TODO: it returns nothing because thats how post was written
         List<Long> ids = new ArrayList<>(newSet);
-        chatApi.createChat(ids)
+        chatApi.createChat(ids, name)
             .thenAccept(proto -> {
                 if (proto.getPacket().getMetaData().getCommProtocol().orElse(null)
                         == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {
@@ -125,6 +141,7 @@ public class CreateChatDialogController {
                     if (created != null) {
                         Platform.runLater(() -> {
                             onChatCreated.accept(created);
+                            existingChats.add(created);
                             closeWindow();
                         });
                     }

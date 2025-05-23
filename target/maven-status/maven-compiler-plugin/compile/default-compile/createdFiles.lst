@@ -1,3 +1,4 @@
+com\example\clientfx\controllers\CreateChatDialogController$1.class
 com\example\clientfx\api\ChatApi$2.class
 com\example\ORMProvider.class
 com\example\Main.class
@@ -28,7 +29,6 @@ com\example\model\ChatInfo.class
 com\example\ServerClientApp.class
 com\example\socket\server\ProtoServer.class
 com\example\clientfx\controllers\AddChatUserController.class
-com\example\clientfx\api\ChatApi$3.class
 com\example\clientfx\api\ChatInfoApi$2.class
 com\example\clientfx\api\ChatApi.class
 com\example\clientfx\controllers\AdminDashBoardController.class
