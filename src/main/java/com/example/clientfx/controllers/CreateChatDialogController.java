@@ -34,12 +34,6 @@ public class CreateChatDialogController {
 
     /**
      * Initialize the dialog.
-     *
-     * @param userApi        the UserApi for fetching users
-     * @param chatApi        the ChatApi for creating chats
-     * @param self           the current user
-     * @param existingChats  the list of already‑loaded Chat objects
-     * @param onChatCreated  callback to receive the newly created Chat
      */
     public void init(UserApi userApi,
                      ChatApi chatApi,
@@ -52,31 +46,30 @@ public class CreateChatDialogController {
         this.existingChats = existingChats;
         this.onChatCreated = onChatCreated;
 
+        // Enable multiple selection of users
         availableUsersList.setItems(allUsers);
         availableUsersList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        // Auto‑fill name when exactly one partner selected
+        // Auto-fill and edit name field based on selection count
         availableUsersList.getSelectionModel().getSelectedItems().addListener((ListChangeListener<User>) change -> {
             List<User> sel = availableUsersList.getSelectionModel().getSelectedItems();
             if (sel.size() == 1) {
+                // For one-on-one chat, auto name and make read-only
                 chatNameField.setText(self.getName() + " & " + sel.get(0).getName());
-                chatNameField.setDisable(true);
+                chatNameField.setEditable(false);
             } else {
+                // For group chats, clear and allow editing
                 chatNameField.clear();
-                chatNameField.setDisable(false);
+                chatNameField.setEditable(true);
             }
         });
 
-        // lets make it actually show their names please
+        // Display user names only
         availableUsersList.setCellFactory(avuserlist -> new ListCell<>() {
             @Override
             protected void updateItem(User user, boolean empty) {
                 super.updateItem(user, empty);
-                if (empty || user == null) {
-                    setText(null);
-                } else {
-                    setText(user.getName());
-                }
+                setText((empty || user == null) ? null : user.getName());
             }
         });
         loadAllUsers();
@@ -90,7 +83,7 @@ public class CreateChatDialogController {
                     @SuppressWarnings("unchecked")
                     List<User> users = (List<User>) proto.getPacket()
                         .getMetaData().getPayload().orElse(List.of());
-                    // exclude self
+                    // Exclude self
                     users.removeIf(u -> u.getId().equals(self.getId()));
                     Platform.runLater(() -> allUsers.setAll(users));
                 }
@@ -110,12 +103,12 @@ public class CreateChatDialogController {
             return;
         }
 
-        // Build a set of participant IDs
+        // Build participant ID set
         Set<Long> newSet = new HashSet<>();
         newSet.add(self.getId());
         selected.forEach(u -> newSet.add(u.getId()));
 
-        // Check for duplicate chat (exact same participant set)
+        // Prevent duplicate chat for exact participants
         boolean dup = existingChats.stream().anyMatch(chat -> {
             Set<Long> ids = chat.getUsers().stream()
                                  .map(User::getId)
@@ -127,10 +120,8 @@ public class CreateChatDialogController {
             return;
         }
 
-        // Create the new chat on backend
-        // TODO: it returns nothing because thats how post was written
-        List<Long> ids = new ArrayList<>(newSet);
-        chatApi.createChat(ids, name)
+        // Create chat via API
+        chatApi.createChat(new ArrayList<>(newSet), name)
             .thenAccept(proto -> {
                 if (proto.getPacket().getMetaData().getCommProtocol().orElse(null)
                         == Protocol.Packet.MetaData.CommProtocol.RESPONSE_OK) {

@@ -1,6 +1,7 @@
 package com.example;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.List;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -9,6 +10,8 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 
+import com.example.model.Chat;
+import com.example.model.User;
 import com.example.socket.server.DataProvider;
 
 
@@ -148,27 +151,36 @@ public class ORMProvider <T, ID extends Serializable> implements DataProvider<T>
     public void delete(Object id) throws Exception
     {
         Transaction tx = null;
-        try 
-        {
+        try {
             tx = session.beginTransaction();
             T entity = entityClass.cast(session.get(entityClass, (ID) id));
-            if(entity != null)
-            {
-                session.delete(entity);
-            }
-            else
-            {
+            if (entity == null) {
                 throw new Exception("Error deleting object: object does not exist");
             }
+            // Handle User deletion with chat cleanup
+            // In ORMProvider.delete(...)
+            if (entity instanceof User user) {
+                session.createNativeQuery("DELETE FROM user_chats WHERE user_id = :uid")
+                .setParameter("uid", user.getId())
+                .executeUpdate();
+            session.remove(user);
 
-            tx.commit();
-        }
-        catch(Exception e)
-        {
-            if(tx != null)
-            {
-                tx.rollback();
+            // Handle Chat deletion with user cleanup
+            } else if (entity instanceof Chat) {
+                Chat chat = (Chat) entity;
+                for (User user : new HashSet<>(chat.getUsers())) {
+                    user.getChats().remove(chat);
+                    session.merge(user);
+                }
+                session.delete(chat);
+
+            // Default deletion
+            } else {
+                session.delete(entity);
             }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
             throw new Exception("Error deleting " + entityClass.getSimpleName(), e);
         }
     }

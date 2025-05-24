@@ -83,6 +83,7 @@ public class AdminDashBoardController {
     {
         // map model properties to table columns
         idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        idColumn.setVisible(false);     // hide the id column
         usernameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
 

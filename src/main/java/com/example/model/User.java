@@ -1,64 +1,86 @@
 package com.example.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-
-
 @Entity
-@Table(name="users")
-public class User implements Serializable{
-    
+@Table(name = "users")
+public class User implements Serializable {
 
-    @Id 
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 100)
     private String name;
 
-
-    // Many Users to Many Chats
-    @ManyToMany(fetch = FetchType.EAGER)
+    /** Many Users ↔️ Many Chats (owning side) */
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "user_chats",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "chat_id")
     )
-
     private Set<Chat> chats = new HashSet<>();
-    public User() { }
+
+    public User() {}
 
     public User(String name) {
         this.name = name;
     }
 
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public Set<Chat> getChats() {return chats;}
-    public void addChat(Chat chat)
-    {
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<Chat> getChats() {
+        return chats;
+    }
+
+    /**
+     * Add chat to user and maintain both sides of relationship
+     */
+    public void addChat(Chat chat) {
         chats.add(chat);
         chat.getUsers().add(this);
     }
-    public void removeChat(Chat chat)
-    {
+
+    /**
+     * Remove chat from user and maintain both sides of relationship
+     */
+    public void removeChat(Chat chat) {
         chats.remove(chat);
         chat.getUsers().remove(this);
+    }
+
+    /**
+     * Remove all chat associations for cleanup/deletion
+     */
+    public void removeAllChats() {
+        for (Chat chat : new HashSet<>(chats)) {
+            removeChat(chat);
+        }
+    }
+
+    /**
+     * Lifecycle callback to clean up relationships before entity removal
+     */
+    @PreRemove
+    private void onPreRemove() {
+        removeAllChats();
     }
 }
